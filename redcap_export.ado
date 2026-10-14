@@ -413,9 +413,8 @@ foreach f of local fname {
 		qui rename unique_event_name redcap_event_name
 		qui  save "`keepforms'", replace
 		restore
-		local keeplist redcap_event_name
+		//local keeplist redcap_event_name
 	}
-	
 	
 	
 	//non-checkbox variables
@@ -426,15 +425,20 @@ foreach f of local fname {
 	//checkbox variables: several entries
 	qui  levelsof field_name if field_type=="checkbox", local(vars)
 	foreach l of local vars {
-			local keeplist `keeplist' `l'___*
+			//local keeplist `keeplist' `l'___*
+			local keeplist `keeplist' `l'__*
 	}
 	
-	
+
 	use "`pathlab'/record", clear	
 	if `eventmap'==1 {
-		qui mmerge redcap_event_name using  "`keepforms'", type(n:1)
-		qui keep if _merge==3
-		qui drop _merge
+		capture confirm variable redcap_event_name
+		if !_rc {
+			qui mmerge redcap_event_name using  "`keepforms'", type(n:1)
+			qui keep if _merge==3
+			qui drop _merge
+			local keeplist redcap_event_name `keeplist'
+		}
 	}
 
 	sort record_id
