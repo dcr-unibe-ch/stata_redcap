@@ -1,4 +1,4 @@
-*! version 1.0.2 29May2026
+*! version 1.0.4 06November2026
 
 *wrapper
 ***********
@@ -405,6 +405,7 @@ foreach f of local fname {
 	qui keep if form_name=="`f'"
 	
 	local keeplist
+	local keeplistcb
 	
 	if `eventmap'==1 {
 		preserve
@@ -413,7 +414,6 @@ foreach f of local fname {
 		qui rename unique_event_name redcap_event_name
 		qui  save "`keepforms'", replace
 		restore
-		//local keeplist redcap_event_name
 	}
 	
 	
@@ -426,7 +426,7 @@ foreach f of local fname {
 	qui  levelsof field_name if field_type=="checkbox", local(vars)
 	foreach l of local vars {
 			//local keeplist `keeplist' `l'___*
-			local keeplist `keeplist' `l'__*
+			local keeplistcb `keeplistcb' `l'__*
 	}
 	
 
@@ -440,7 +440,20 @@ foreach f of local fname {
 			local keeplist redcap_event_name `keeplist'
 		}
 	}
-
+	
+	//ignore variables not available, e.g. identifiers:
+	unab current_vars : _all
+	local missing_vars : list keeplist - current_vars	
+	local wc: word count `missing_vars'
+	if `wc'>0 {
+		dis as error "Variables not found on `f': `missing_vars'"
+		local keeplist : list current_vars & keeplist
+	}
+	
+	//add checkbox with wild cards
+	local keeplist `keeplist' `keeplistcb'
+	
+	//formstates
 	sort record_id
 	local fs=substr("`f'_complete",1,32)
 	label define formstat_l 0 "Incomplete" 1 "Unverified" 2 "Complete", replace	
